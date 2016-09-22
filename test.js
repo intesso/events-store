@@ -64,9 +64,8 @@ test('create Store with initialState and reducers', function (t) {
 
 test('dispatch action -> calls reducer', function (t) {
   var store = Store({
-    'myComponent': function (state, name, action) {
+    'myComponent': function (state, action) {
       t.deepEqual(state, {});
-      t.deepEqual(name, 'myComponent');
       t.deepEqual(action, {
         here: 'to stay'
       });
@@ -82,8 +81,7 @@ test('dispatch action -> calls reducer', function (t) {
 
 test('dispatch action -> getState()', function (t) {
   var store = Store({
-    'myComponent': function (state, name, action) {
-      console.warn('reducer return action', action);
+    'myComponent': function (state, action) {
       return action;
     }
   });
@@ -94,11 +92,71 @@ test('dispatch action -> getState()', function (t) {
 
   var state = store.getState();
   t.deepEqual(state, {
-    'myComponent': {
-      here: 'to stay'
-    }
+    here: 'to stay'
   });
   t.end();
 
 });
 
+test('dispatch namespaced action -> getState() including namespace', function (t) {
+  var store = Store({
+    'routes.ROUTE': function (state, action) {
+      return action;
+    }
+  });
+
+  store.dispatch('routes.ROUTE', {
+    here: 'to stay'
+  });
+
+  var state = store.getState();
+  t.deepEqual(state, {
+    routes: {
+      here: 'to stay'
+    }
+  });
+
+  var nested = store.getState('routes.');
+  t.deepEqual(nested, { here: 'to stay' });
+
+  t.end();
+
+});
+
+test('dispatch namespaced action -> getState() including namespace', function (t) {
+  var store = Store({
+    'routes.HOME': function (state, action) {
+      return { url: '/' };
+    },
+    'routes.LOGIN': function (state, action) {
+      return { url: '/login' };
+    }
+  });
+
+  store.dispatch('routes.HOME');
+  t.deepEqual(store.getState('routes.'), { url: '/' });
+  store.dispatch('routes.LOGIN');
+  t.deepEqual(store.getState('routes.'), { url: '/login' });
+
+  t.end();
+
+});
+
+test('dispatch namespaced action (string) -> getState()', function (t) {
+  var store = Store({
+    'routes.HOME': function (state, action) {
+      return '/';
+    },
+    'routes.LOGIN': function (state, action) {
+      return '/login';
+    }
+  });
+
+  store.dispatch('routes.HOME');
+  t.deepEqual(store.getState(), { routes: '/' });
+  store.dispatch('routes.LOGIN');
+  t.deepEqual(store.getState(), { routes: '/login' });
+
+  t.end();
+
+});

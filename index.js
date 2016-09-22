@@ -44,9 +44,10 @@ Store.prototype.dispatch = function dispatch(name, action) {
 
   this.willDispatch(this._state);
   var currentState = utils.fill(name, this._state);
+  var currentParent = utils.nestedParent(name, this._state);
   console.warn('afterWillDispatch', currentState, this._state);
   var nextState = this.reducers[name](currentState, action);
-  this.didCallReducer(currentState, nextState, action);
+  this.didCallReducer(nextState, action, currentState, currentParent.state, currentParent.key);
 
   var self = this;
   utils.meltdown(name, this._state).forEach(function (namespace) {
@@ -63,10 +64,12 @@ Store.prototype.willDispatch = function willDispatch(currentState) {
   this._previousState = currentState;
 };
 
-Store.prototype.didCallReducer = function didCallReducer(currentState, nextState, action) {
-  console.warn('didCallReducer current', currentState);
-  console.warn('didCallReducer nextState', nextState);
-  Object.assign(currentState, nextState);
+Store.prototype.didCallReducer = function didCallReducer(nextState, action, currentState, currentParentState, currentParentKey) {
+  if (typeof currentState === 'object' && typeof nextState === 'object') {
+    Object.assign(currentState, nextState);
+  } else {
+    currentParentState[currentParentKey] = nextState;
+  }
 };
 
 

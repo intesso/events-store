@@ -23,8 +23,25 @@ exports.nested = function nested(name, state) {
   var found = segments.namespace.every(function (seg, i) {
     if (!s[seg]) return false;
     s = s[seg];
+    return true;
   });
   return found ? s : null;
+};
+
+exports.nestedParent = function nestedParent(name, state) {
+  var segments = exports.resolve(name);
+  if (!segments.namespace) return {};
+
+  var s = state, k = null;
+  var found = segments.namespace.every(function (seg, i) {
+    if (!s[seg]) return false;
+    if (i < segments.namespace.length - 1) {
+      s = s[seg];
+    }
+    k = seg;
+    return true;
+  });
+  return found ? { state: s, key: k } : {};
 };
 
 exports.fill = function fill(name, state) {
