@@ -1,0 +1,33 @@
+{
+  "name": "events-store",
+  "version": "0.0.0",
+  "description": "Event Emitter based Store for the browser and node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test.js | tap-spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/intesso/events-store.git"
+  },
+  "keywords": [
+    "redux",
+    "store",
+    "event",
+    "emitter"
+  ],
+  "author": "Andi Neck",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/intesso/events-store/issues"
+  },
+  "homepage": "https://github.com/intesso/events-store#readme",
+  "dependencies": {
+    "events": "^1.1.1",
+    "inherits": "^2.0.3"
+  },
+  "devDependencies": {
+    "tap-spec": "^4.1.1",
+    "tape": "^4.6.0"
+  }
+}
