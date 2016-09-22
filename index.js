@@ -12,7 +12,7 @@ function Store(reducers, initialState) {
   if (!(this instanceof Store)) return new Store(reducers, initialState);
   this.reducers = {};
   if (reducers) this.addReducers(reducers);
-  this._state = initialState || {};
+  this._state = typeof initialState !== 'undefined' ? initialState : {};
 }
 
 /*
@@ -45,7 +45,6 @@ Store.prototype.dispatch = function dispatch(name, action) {
   this.willDispatch(this._state);
   var currentState = utils.fill(name, this._state);
   var currentParent = utils.nestedParent(name, this._state);
-  console.warn('afterWillDispatch', currentState, this._state);
   var nextState = this.reducers[name](currentState, action);
   this.didCallReducer(nextState, action, currentState, currentParent.state, currentParent.key);
 
@@ -65,10 +64,13 @@ Store.prototype.willDispatch = function willDispatch(currentState) {
 };
 
 Store.prototype.didCallReducer = function didCallReducer(nextState, action, currentState, currentParentState, currentParentKey) {
+  console.log('didCallReducer', [].slice.call(arguments));
   if (typeof currentState === 'object' && typeof nextState === 'object') {
     Object.assign(currentState, nextState);
-  } else {
+  } else if (typeof currentParentKey !== 'undefined') {
     currentParentState[currentParentKey] = nextState;
+  } else {
+    this._state = nextState;
   }
 };
 

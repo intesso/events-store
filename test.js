@@ -160,3 +160,96 @@ test('dispatch namespaced action (string) -> getState()', function (t) {
   t.end();
 
 });
+
+test('listen .on() bubbling', function (t) {
+  var store = Store({
+    'routes.HOME': function (state, action) {
+      return '/';
+    },
+    'routes.LOGIN': function (state, action) {
+      return '/login';
+    }
+  });
+
+  var event = 0;
+  store.on('routes.HOME', function (state) {
+    t.equals(++event, 1);
+    t.equals(state, '/');
+  });
+
+  store.on('routes', function (state) {
+    t.equals(++event, 2);
+    t.deepEqual(state, { routes: '/' });
+  });
+
+  store.dispatch('routes.HOME');
+
+  t.end();
+
+});
+
+test('counter', function (t) {
+  var store = Store({
+    'counter.ADD': function (state, action) {
+      console.log('ADD', state);
+      return ++state;
+    },
+    'counter.SUB': function (state, action) {
+      console.log('SUB', state);
+      return --state;
+    }
+  }, { counter: 0 });
+
+  t.deepEqual(store.getState(), { counter: 0 });
+
+  var events = 0;
+  var states = [1, 2, 3, 2];
+  store.on('counter', function (state) {
+    t.equal(states[events++], state.counter);
+  });
+
+  store.dispatch('counter.ADD');
+  store.dispatch('counter.ADD');
+  store.dispatch('counter.ADD');
+  store.dispatch('counter.SUB');
+
+  var counter = store.getState();
+  t.equal(counter.counter, 2);
+  t.equal(events, 4);
+  t.end();
+
+});
+
+test('calc', function (t) {
+  var store = Store({
+    'ADD': function (state, action) {
+      if (isNaN(action)) return ++state;
+      return state + action;
+    },
+    'SUB': function (state, action) {
+      if (isNaN(action)) return --state;
+      return state - action;
+    }
+  }, 0);
+
+  t.equal(store.getState(), 0);
+
+  store.on('ADD', ev);
+  store.on('SUB', ev);
+
+  var events = 0;
+  function ev(state) {
+    console.log('calc result', state);
+    events++;
+  }
+
+  store.dispatch('ADD', 5.6);
+  store.dispatch('ADD', 7.4);
+  store.dispatch('SUB', 3);
+
+  var counter = store.getState();
+  t.equal(counter, 10);
+  t.equal(events, 3);
+  t.end();
+
+});

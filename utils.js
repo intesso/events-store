@@ -21,7 +21,7 @@ exports.nested = function nested(name, state) {
 
   var s = state;
   var found = segments.namespace.every(function (seg, i) {
-    if (!s[seg]) return false;
+    if (typeof s[seg] === 'undefined') return false;
     s = s[seg];
     return true;
   });
@@ -34,7 +34,7 @@ exports.nestedParent = function nestedParent(name, state) {
 
   var s = state, k = null;
   var found = segments.namespace.every(function (seg, i) {
-    if (!s[seg]) return false;
+    if (typeof s[seg] === 'undefined') return false;
     if (i < segments.namespace.length - 1) {
       s = s[seg];
     }
@@ -50,7 +50,7 @@ exports.fill = function fill(name, state) {
 
   var s = state;
   segments.namespace.forEach(function (seg, i) {
-    s[seg] = s[seg] || {};
+    if (typeof s[seg] === 'undefined') s[seg] = {};
     s = s[seg];
   });
   return s;
