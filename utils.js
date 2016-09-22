@@ -1,44 +1,57 @@
+var segmentsCache = {};
+var meltdownCache = {};
+
+exports.segmentsPattern = /[\.\[\]]/;
+
 exports.resolve = function resolve(name) {
-  if (!name) return [];
-  return name.split(/[\.\[\]]/);
+  if (!name) return {};
+  if (segmentsCache[name]) return segmentsCache[name];
+
+  var segments = name.split(exports.segmentsPattern);
+  segmentsCache[name] = {
+    namespace: segments.length > 1 ? segments.slice(0, segments.length - 1) : null,
+    actionType: segments[segments.length - 1]
+  };
+  return segmentsCache[name];
 };
 
 exports.nested = function nested(name, state) {
   var segments = exports.resolve(name);
-  // fast
-  if (segments.length === 1) return { key: name, state: state };
-  var s = state, property = name;
-  // slower
-  segments.every(function (seg, i) {
-    if (!s[seg] || i === segments.length) return false;
+  if (!segments.namespace) return state;
+
+  var s = state;
+  var found = segments.namespace.every(function (seg, i) {
+    if (!s[seg]) return false;
     s = s[seg];
-    property = seg;
   });
-  return { key: property, state: s };
+  return found ? s : null;
 };
 
 exports.fill = function fill(name, state) {
   var segments = exports.resolve(name);
-  // fast
-  if (segments.length === 1) return { key: name, state: state };
-  var s = state, property = name;
-  // slower
-  segments.forEach(function (seg, i) {
+  if (!segments.namespace) return state;
+
+  var s = state;
+  segments.namespace.forEach(function (seg, i) {
     s[seg] = s[seg] || {};
-    if (i < segments.length) {
-      s = s[seg];
-      property = seg;
-    }
+    s = s[seg];
   });
-  return { key: property, state: s };
+  return s;
 };
 
 exports.meltdown = function meltdown(name, state) {
-  var segments = exports.resolve(name);
-  var names = [];
-  while (segments.length > 0) {
-    names.push(segments.join('.'));
-    segments.pop();
+  if (meltdownCache[name]) return meltdownCache[name];
+  var names = [name];
+  var ns = name;
+  while (ns.search(exports.segmentsPattern) > 0) {
+    ns = ns.substring(0, searchLast(ns, exports.segmentsPattern));
+    names.push(ns);
   }
+  meltdownCache[name] = names;
   return names;
 };
+
+function searchLast(str, regex) {
+  var match = str.match(regex);
+  return str.lastIndexOf(match[match.length - 1]);
+}

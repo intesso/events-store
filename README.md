@@ -2,6 +2,8 @@
 
 Event Emitter based Store for the browser and node.js
 
+> WIP!!!
+
 ## motivation
 
 I would like to have a store at hand that is similar to redux that works well with nested components.
@@ -26,8 +28,8 @@ npm install --save events-store
 var createStore = require('events-store');
 var store = createStore();
 
-// add reducer
-store.addReducer('ADD_MY_THING', function (state, action) {
+// define reducer
+store.define('ADD_MY_THING', function (state, action) {
   return state.concat([action.additionalValues]);
 });
 

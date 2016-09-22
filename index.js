@@ -43,14 +43,14 @@ Store.prototype.dispatch = function dispatch(name, action) {
   if (!this.reducers[name]) throw new DoesNotExistError('there is no reducer with the name: ' + name);
 
   this.willDispatch(this._state);
-  var current = utils.fill(name, this._state);
-  console.warn('afterWillDispatch', current, this._state);
-  var nextState = this.reducers[name](current.state, current.key, action);
-  this.didCallReducer(current, nextState, action);
+  var currentState = utils.fill(name, this._state);
+  console.warn('afterWillDispatch', currentState, this._state);
+  var nextState = this.reducers[name](currentState, action);
+  this.didCallReducer(currentState, nextState, action);
 
   var self = this;
   utils.meltdown(name, this._state).forEach(function (namespace) {
-    self.emit(namespace, utils.nested(namespace, this._state));
+    self.emit(namespace, utils.nested(namespace, self._state));
   });
 };
 
@@ -63,11 +63,10 @@ Store.prototype.willDispatch = function willDispatch(currentState) {
   this._previousState = currentState;
 };
 
-Store.prototype.didCallReducer = function didCallReducer(current, nextState, action) {
-  console.warn('didCallReducer current', current);
+Store.prototype.didCallReducer = function didCallReducer(currentState, nextState, action) {
+  console.warn('didCallReducer current', currentState);
   console.warn('didCallReducer nextState', nextState);
-  Object.assign(current.state, nextState);
-  // current.state[current.key] = nextState;
+  Object.assign(currentState, nextState);
 };
 
 
