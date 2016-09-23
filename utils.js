@@ -1,10 +1,16 @@
 var segmentsCache = {};
-var meltdownCache = {};
+var bubbleCache = {};
 
 exports.segmentsPattern = /[\.\[\]]/;
 
-exports.resolve = function resolve(name) {
+exports.clearCache = function clearCache() {
+  segmentsCache = {};
+  bubbleCache = {};
+};
+
+exports.resolve = function resolve(name, ns) {
   if (!name) return {};
+  name = ns && !exports.endsWith(name, '.') ? name + '.' : name;
   if (segmentsCache[name]) return segmentsCache[name];
 
   var segments = name.split(exports.segmentsPattern);
@@ -15,8 +21,8 @@ exports.resolve = function resolve(name) {
   return segmentsCache[name];
 };
 
-exports.nested = function nested(name, state) {
-  var segments = exports.resolve(name);
+exports.nested = function nested(name, state, ns) {
+  var segments = exports.resolve(name, ns);
   if (!segments.namespace || name === '*') return state;
 
   var s = state;
@@ -28,8 +34,8 @@ exports.nested = function nested(name, state) {
   return found ? s : null;
 };
 
-exports.nestedParent = function nestedParent(name, state) {
-  var segments = exports.resolve(name);
+exports.nestedParent = function nestedParent(name, state, ns) {
+  var segments = exports.resolve(name, ns);
   if (!segments.namespace) return {};
 
   var s = state, k = null;
@@ -44,8 +50,8 @@ exports.nestedParent = function nestedParent(name, state) {
   return found ? { state: s, key: k } : {};
 };
 
-exports.fill = function fill(name, state) {
-  var segments = exports.resolve(name);
+exports.fill = function fill(name, state, ns) {
+  var segments = exports.resolve(name, ns);
   if (!segments.namespace) return state;
 
   var s = state;
@@ -56,8 +62,8 @@ exports.fill = function fill(name, state) {
   return s;
 };
 
-exports.meltdown = function meltdown(name, state) {
-  if (meltdownCache[name]) return meltdownCache[name];
+exports.bubble = function bubble(name, state) {
+  if (bubbleCache[name]) return bubbleCache[name];
   var names = [name];
   var ns = name;
   while (ns.search(exports.segmentsPattern) > 0) {
@@ -65,7 +71,7 @@ exports.meltdown = function meltdown(name, state) {
     names.push(ns);
   }
   if (name !== '*') names.push('*');
-  meltdownCache[name] = names;
+  bubbleCache[name] = names;
   return names;
 };
 
@@ -73,3 +79,7 @@ function searchLast(str, regex) {
   var match = str.match(regex);
   return str.lastIndexOf(match[match.length - 1]);
 }
+
+exports.endsWith = function endsWith(str, suffix) {
+  return str.indexOf(suffix, str.length - suffix.length) !== -1;
+};

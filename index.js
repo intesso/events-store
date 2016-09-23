@@ -12,15 +12,23 @@ module.exports.createStore = Store;
 function Store(reducers, initialState) {
   if (!(this instanceof Store)) return new Store(reducers, initialState);
   this.reducers = {};
+  this.did = 0;
   if (reducers) this.register(reducers);
-  this._state = typeof initialState !== 'undefined' ? initialState : {};
+  this.setInitialState(initialState);
 }
 
 /*
 API functions, also check `events` API, since Store inherits from `events`.
 */
+Store.prototype.setInitialState = function setInitialState(initialState) {
+  if (this.did) throw new NotAllowedError('not allowed to set initialState after dispatch');
+  this._state = typeof initialState !== 'undefined' ? initialState : {};
+  return this;
+};
+
 Store.prototype.register =
   Store.prototype.add =
+  Store.prototype.define =
   Store.prototype.reducer =
   Store.prototype.addReducer = function addReducers(name, reducer) {
     return this._add(name, reducer, true);
@@ -46,48 +54,52 @@ Store.prototype.do =
   Store.prototype.dispatch = function dispatch(name, action) {
     if (!this.reducers[name]) throw new DoesNotExistError('there is no reducer with the name: ' + name);
 
-    this.willDispatch(this._state);
+    this.willDispatch(this._state, this.did);
     var currentState = utils.fill(name, this._state);
     var currentParent = utils.nestedParent(name, this._state);
     var nextState = this.reducers[name](currentState, action);
     this.didCallReducer(nextState, action, currentState, currentParent.state, currentParent.key);
 
     var self = this;
-    utils.meltdown(name, this._state).forEach(function (namespace) {
-      self.emit(namespace, utils.nested(namespace, self._state));
+    utils.bubble(name, this._state).forEach(function (namespace, i) {
+      self.emit(namespace, utils.nested(namespace, self._state, i > 0));
     });
     return this;
   };
 
 Store.prototype.get =
-  Store.prototype.getState = function getState(name) {
-    if (!name) return this._state;
-    name = endsWith(name, '.') ? name : name + '.';
-    return utils.nested(name, this._state);
+  Store.prototype.getState = function getState(namespace) {
+    if (!namespace) return this._state;
+    return utils.nested(namespace, this._state, true);
   };
 
 Store.prototype.previous =
   Store.prototype.getPrevious =
-  Store.prototype.getPreviousState = function getPreviousState(name) {
-    if (!name) return this._previousState;
-    name = endsWith(name, '.') ? name : name + '.';
-    return utils.nested(name, this._previousState);
+  Store.prototype.getPreviousState = function getPreviousState(namespace) {
+    if (!namespace) return this._previousState;
+    return utils.nested(namespace, this._previousState);
   };
 
-Store.prototype.willDispatch = function willDispatch(currentState) {
+Store.prototype.willDispatch = function willDispatch(currentState, did) {
+  did++;
   this._previousState = currentState;
 };
 
 Store.prototype.didCallReducer = function didCallReducer(nextState, action, currentState, currentParentState, currentParentKey) {
-  // TODO check overwrite parent
+  // TODOs check overwrite parent
   console.log('didCallReducer', [].slice.call(arguments));
-  if (typeof currentState === 'object' && typeof nextState === 'object') {
+  if (typeof currentState === 'object' && typeof nextState === 'object' && !Array.isArray(nextState)) {
     Object.assign(currentState, nextState);
   } else if (typeof currentParentKey !== 'undefined') {
     currentParentState[currentParentKey] = nextState;
   } else {
     this._state = nextState;
   }
+};
+
+Store.prototype.clearCache = function clearCache() {
+  utils.clearCache();
+  return this;
 };
 
 /*
@@ -120,6 +132,7 @@ function AlreadyExistsError(message) {
   this.message = message || '';
 }
 
-function endsWith(str, suffix) {
-  return str.indexOf(suffix, str.length - suffix.length) !== -1;
+inherits(NotAllowedError, Error);
+function NotAllowedError(message) {
+  this.message = message || '';
 }

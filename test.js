@@ -1,12 +1,9 @@
 var test = require('tape');
 var Store = require('./index.js');
 
-// TODO
-// - add test with Array
+// TODOs
 // - add failing test with overriding parent Object
-// - replace tests with meaningful examples
 // - test remove, update
-
 
 test('create Store', function (t) {
   var store = Store();
@@ -186,7 +183,7 @@ test('listen .on() bubbling', function (t) {
 
   store.on('routes', function (state) {
     t.equals(++event, 2);
-    t.deepEqual(state, { routes: '/' });
+    t.deepEqual(state, '/');
   });
 
   store.dispatch('routes.HOME');
@@ -198,11 +195,9 @@ test('listen .on() bubbling', function (t) {
 test('counter', function (t) {
   var store = Store({
     'counter.ADD': function (state, action) {
-      console.log('ADD', state);
       return ++state;
     },
     'counter.SUB': function (state, action) {
-      console.log('SUB', state);
       return --state;
     }
   }, { counter: 0 });
@@ -212,7 +207,7 @@ test('counter', function (t) {
   var events = 0;
   var states = [1, 2, 3, 2];
   store.on('counter', function (state) {
-    t.equal(states[events++], state.counter);
+    t.equal(states[events++], state);
   });
 
   store.dispatch('counter.ADD');
@@ -247,7 +242,6 @@ test('calc', function (t) {
 
   var events = 0;
   function ev(state) {
-    console.log('calc result', state);
     events++;
   }
 
@@ -258,6 +252,145 @@ test('calc', function (t) {
   var counter = store.getState();
   t.equal(counter, 10);
   t.equal(events, 6);
+  t.end();
+
+});
+
+test('tweets', function (t) {
+  var store = Store();
+
+  store
+    .setInitialState([])
+    .define({
+      'SEND': function (state, action) {
+        return [{ message: action }].concat(state);
+      },
+      'LIKE_LATEST_TWEET': function (state, action) {
+        var latest = Object.assign({}, state[0]);
+        latest.likes = typeof latest.likes === 'undefined' ? 1 : ++latest.likes;
+        state[0] = latest;
+        return state;
+      }
+    });
+
+  t.deepEqual(store.getState(), []);
+
+  var events = 0;
+  var tweets = 0;
+  var likes = 0;
+
+  store.on('SEND', s => tweets++);
+  store.on('LIKE_LATEST_TWEET', s => likes++);
+  store.on('*', s => events++);
+
+
+  store
+    .do('SEND', 'my first tweet')
+    .do('LIKE_LATEST_TWEET')
+    .do('SEND', 'now I\'m a pro')
+    .do('LIKE_LATEST_TWEET')
+    .do('LIKE_LATEST_TWEET')
+    .do('LIKE_LATEST_TWEET');
+
+  var state = store.getState();
+  t.equal(events, 6);
+  t.equal(tweets, 2);
+  t.equal(state.length, 2);
+  t.deepEqual(state, [{ message: 'now I\'m a pro', likes: 3 }, { message: 'my first tweet', likes: 1 }]);
+  t.end();
+
+});
+
+test('user', function (t) {
+  var store = Store();
+  store.clearCache();
+  var events = 0;
+
+  // login.js
+  store
+    .define({
+      'user.LOGIN': function (state, action) {
+        return { userState: action };
+      },
+      'user.LOGOUT': function (state, action) {
+        return { userState: null };
+      }
+    });
+
+  events = 0;
+
+  store.on('user.LOGIN', function (state) {
+    t.deepEqual(state.userState, { name: 'its me' });
+    events++;
+  });
+  store.on('user.LOGOUT', function (state) {
+    t.equal(state.userState, null);
+    events++;
+  });
+  store.on('user', function (state) {
+    t.true(state);
+    events++;
+  });
+  store.on('*', function (state) {
+    t.true(state.user);
+    events++;
+  });
+
+  store.do('user.LOGIN', { name: 'its me' });
+  t.deepEqual(store.getState('user'), { userState: { name: 'its me' } });
+  store.do('user.LOGOUT');
+  t.deepEqual(store.getState('user'), { userState: null });
+
+  t.equal(events, 6);
+
+  // bookmarks.js
+  store
+    .define({
+      'user.bookmarks.ADD': function (state, action) {
+        state = Array.isArray(state) ? state : [];
+        return state.concat([action]);
+      },
+      'user.bookmarks.REMOVE': function (state, action) {
+        return state.filter(function (bookmark) {
+          return bookmark.name !== action;
+        });
+      }
+    });
+
+  store.on('user.bookmark', function (state) {
+    t.true(Array.isArray(state));
+    events++;
+  });
+
+  events = 0;
+
+  store
+    .do('user.bookmarks.ADD', {
+      url: 'www.npmjs.org',
+      name: 'npm'
+    })
+    .do('user.bookmarks.ADD', {
+      url: 'www.nodejs.org',
+      name: 'node.js'
+    })
+    .do('user.bookmarks.ADD', {
+      url: 'www.devdocs.io',
+      name: 'devdocs'
+    })
+    .do('user.bookmarks.REMOVE', 'node.js');
+
+  var state = store.getState('user.bookmarks');
+  t.equal(events, 8);
+  t.equal(state.length, 2);
+  t.deepEqual(state, [
+    {
+      url: 'www.npmjs.org',
+      name: 'npm'
+    },
+    {
+      url: 'www.devdocs.io',
+      name: 'devdocs'
+    }]);
   t.end();
 
 });
