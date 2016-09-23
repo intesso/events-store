@@ -17,7 +17,7 @@ exports.resolve = function resolve(name) {
 
 exports.nested = function nested(name, state) {
   var segments = exports.resolve(name);
-  if (!segments.namespace) return state;
+  if (!segments.namespace || name === '*') return state;
 
   var s = state;
   var found = segments.namespace.every(function (seg, i) {
@@ -64,6 +64,7 @@ exports.meltdown = function meltdown(name, state) {
     ns = ns.substring(0, searchLast(ns, exports.segmentsPattern));
     names.push(ns);
   }
+  if (name !== '*') names.push('*');
   meltdownCache[name] = names;
   return names;
 };

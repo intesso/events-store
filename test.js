@@ -1,6 +1,13 @@
 var test = require('tape');
 var Store = require('./index.js');
 
+// TODO
+// - add test with Array
+// - add failing test with overriding parent Object
+// - replace tests with meaningful examples
+// - test remove, update
+
+
 test('create Store', function (t) {
   var store = Store();
   var state = store.getState();
@@ -16,9 +23,9 @@ test('create Store with initialState', function (t) {
   t.end();
 });
 
-test('addReducer', function (t) {
-  var store = Store();
-  store.addReducer('myComponent', function (state, name, action) {
+test('register single reducer', function (t) {
+  var store = Store.createStore();
+  store.register('myComponent', function (state, name, action) {
     return action;
   });
   t.equals(Object.keys(store.reducers).length, 1);
@@ -26,9 +33,9 @@ test('addReducer', function (t) {
   t.end();
 });
 
-test('addReducers', function (t) {
+test('register multiple reducers', function (t) {
   var store = Store();
-  store.addReducers({
+  store.register({
     'myComponent': function (state, name, action) {
       return action;
     },
@@ -134,9 +141,9 @@ test('dispatch namespaced action -> getState() including namespace', function (t
   });
 
   store.dispatch('routes.HOME');
-  t.deepEqual(store.getState('routes.'), { url: '/' });
+  t.deepEqual(store.getState('routes'), { url: '/' });
   store.dispatch('routes.LOGIN');
-  t.deepEqual(store.getState('routes.'), { url: '/login' });
+  t.deepEqual(store.getState('routes'), { url: '/login' });
 
   t.end();
 
@@ -236,6 +243,7 @@ test('calc', function (t) {
 
   store.on('ADD', ev);
   store.on('SUB', ev);
+  store.on('*', ev);
 
   var events = 0;
   function ev(state) {
@@ -243,13 +251,13 @@ test('calc', function (t) {
     events++;
   }
 
-  store.dispatch('ADD', 5.6);
-  store.dispatch('ADD', 7.4);
-  store.dispatch('SUB', 3);
+  store.do('ADD', 5.6);
+  store.do('ADD', 7.4);
+  store.do('SUB', 3);
 
   var counter = store.getState();
   t.equal(counter, 10);
-  t.equal(events, 3);
+  t.equal(events, 6);
   t.end();
 
 });

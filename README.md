@@ -3,6 +3,7 @@
 Event Emitter based Store for the browser and node.js
 
 > WIP!!!
+> TODO update
 
 ## motivation
 
