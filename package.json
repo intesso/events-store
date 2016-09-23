@@ -1,6 +1,6 @@
 {
   "name": "onestore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Event Emitter based Store for the browser and node.js",
   "main": "index.js",
   "scripts": {
