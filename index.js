@@ -9,8 +9,8 @@ Constructing Store
 inherits(Store, EventEmitter);
 module.exports = Store;
 module.exports.createStore = Store;
-function Store(reducers, initialState) {
-  if (!(this instanceof Store)) return new Store(reducers, initialState);
+function Store(reducers, initialState, previous) {
+  if (!(this instanceof Store)) return new Store(reducers, initialState, previous);
   this.reducers = {};
   this.did = 0;
   if (reducers) this.register(reducers);
@@ -23,6 +23,22 @@ API functions, also check `events` API, since Store inherits from `events`.
 Store.prototype.setInitialState = function setInitialState(initialState) {
   if (this.did) throw new NotAllowedError('not allowed to set initialState after dispatch');
   this._state = typeof initialState !== 'undefined' ? initialState : {};
+  return this;
+};
+
+Store.prototype.module =
+  Store.prototype.component =
+  Store.prototype.ns =
+  Store.prototype.begin = function begin(ns) {
+    var self = this;
+    return Object.create(self, {
+      namespace: { value: ns },
+      _self: { value: self }
+    });
+  };
+
+Store.prototype.end = function end() {
+  if (this._self) return this._self;
   return this;
 };
 
@@ -46,22 +62,23 @@ Store.prototype.upsert =
 
 Store.prototype.remove =
   Store.prototype.deregister = function remove(name) {
-    return delete this.reducers[name];
+    return delete this.reducers[this._getName(name)];
   };
 
 Store.prototype.do =
   Store.prototype.act =
   Store.prototype.dispatch = function dispatch(name, action) {
-    if (!this.reducers[name]) throw new DoesNotExistError('there is no reducer with the name: ' + name);
+    var n = this._getName(name);
+    if (!this.reducers[n]) throw new DoesNotExistError('there is no reducer with the name: ' + n);
 
     this.willDispatch(this._state, this.did);
-    var currentState = utils.fill(name, this._state);
-    var currentParent = utils.nestedParent(name, this._state);
-    var nextState = this.reducers[name](currentState, action);
+    var currentState = utils.fill(n, this._state);
+    var currentParent = utils.nestedParent(n, this._state);
+    var nextState = this.reducers[n](currentState, action);
     this.didCallReducer(nextState, action, currentState, currentParent.state, currentParent.key);
 
     var self = this;
-    utils.bubble(name, this._state).forEach(function (namespace, i) {
+    utils.bubble(n, this._state).forEach(function (namespace, i) {
       self.emit(namespace, utils.nested(namespace, self._state, i > 0));
     });
     return this;
@@ -69,15 +86,15 @@ Store.prototype.do =
 
 Store.prototype.get =
   Store.prototype.getState = function getState(namespace) {
-    if (!namespace) return this._state;
-    return utils.nested(namespace, this._state, true);
+    if (!namespace && !this.namespace) return this._state;
+    return utils.nested(this._getName(namespace), this._state, true);
   };
 
 Store.prototype.previous =
   Store.prototype.getPrevious =
   Store.prototype.getPreviousState = function getPreviousState(namespace) {
     if (!namespace) return this._previousState;
-    return utils.nested(namespace, this._previousState);
+    return utils.nested(this._getName(namespace), this._previousState);
   };
 
 Store.prototype.willDispatch = function willDispatch(currentState, did) {
@@ -87,7 +104,6 @@ Store.prototype.willDispatch = function willDispatch(currentState, did) {
 
 Store.prototype.didCallReducer = function didCallReducer(nextState, action, currentState, currentParentState, currentParentKey) {
   // TODOs check overwrite parent
-  console.log('didCallReducer', [].slice.call(arguments));
   if (typeof currentState === 'object' && typeof nextState === 'object' && !Array.isArray(nextState)) {
     Object.assign(currentState, nextState);
   } else if (typeof currentParentKey !== 'undefined') {
@@ -105,6 +121,10 @@ Store.prototype.clearCache = function clearCache() {
 /*
 Kind of private Stuff
 */
+Store.prototype._getName = function _getName(name) {
+  return this.namespace ? [this.namespace, name].join('.') : name;
+};
+
 Store.prototype._add = function _add(name, reducer, check) {
   if (typeof name === 'string' && !reducer) return this.reducers[name];
   if (typeof name === 'string') return this._addSingle(name, reducer, check);
@@ -116,9 +136,10 @@ Store.prototype._add = function _add(name, reducer, check) {
 };
 
 Store.prototype._addSingle = function _addSingle(name, reducer, check) {
-  if (check === true && this.reducers[name]) throw new AlreadyExistsError('reducer with name: ' + name + ' already exists');
-  if (check === false && !this.reducers[name]) throw new DoesNotExistError('there is no reducer with the name: ' + name);
-  this.reducers[name] = reducer;
+  var n = this._getName(name);
+  if (check === true && this.reducers[n]) throw new AlreadyExistsError('reducer with name: ' + n + ' already exists');
+  if (check === false && !this.reducers[n]) throw new DoesNotExistError('there is no reducer with the name: ' + n);
+  this.reducers[n] = reducer;
   return this;
 };
 

@@ -218,6 +218,18 @@ Creates a new Store.
 
 Lets you set the initialState like in the Constructor. It must NOT be called, after an action took place with `dispatch`, otherwise a `NotAllowedError` is thrown.
 
+
+#### begin(namespace)
+
+**Alias**: `component`, `module`, `ns`
+
+Sets the namespace and returns a new object with the namespace set, so that you don't have to repeat the namespace, but can define it once per component.
+You can jump out of this namespace with `end()`;
+
+#### end()
+
+Ends the namespace for a component and returns the original `store` object.
+
 #### register(reducers) or (name, reducer)
 
 **Alias**: `add`, `define`, `reducer`, `addReducer`

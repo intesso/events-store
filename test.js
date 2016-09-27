@@ -394,3 +394,60 @@ test('user', function (t) {
   t.end();
 
 });
+
+
+test('begin namespace, end', function (t) {
+  var store = new Store();
+
+  store
+    .begin('tweet')
+    .define({
+      'INIT': function (state) {
+        if (!Array.isArray(state)) return [];
+      },
+      'SEND': function (state, action) {
+        return [{ message: action }].concat(state);
+      },
+      'LIKE_LATEST_TWEET': function (state, action) {
+        var latest = Object.assign({}, state[0]);
+        latest.likes = typeof latest.likes === 'undefined' ? 1 : ++latest.likes;
+        state[0] = latest;
+        return state;
+      }
+    })
+    .do('INIT')
+    .end();
+
+
+  var bookmarks = store.begin('user.bookmarks');
+
+  bookmarks.define({
+    'INIT': function (state) {
+      if (!Array.isArray(state)) return [];
+    },
+    'ADD': function (state, action) {
+      state = Array.isArray(state) ? state : [];
+      return state.concat([action]);
+    },
+    'REMOVE': function (state, action) {
+      return state.filter(function (bookmark) {
+        return bookmark.name !== action;
+      });
+    }
+  });
+  bookmarks.do('INIT');
+  bookmarks.do('ADD', 'www.google.com');
+
+  t.deepEqual(bookmarks.getState(), ['www.google.com']);
+  t.true(bookmarks instanceof Store);
+  t.equal(bookmarks.namespace, 'user.bookmarks');
+
+  var end = bookmarks.end();
+  t.true(end instanceof Store);
+  t.false(end.namespace);
+  t.deepEqual(store.getState(), { tweet: [], user: { bookmarks: ['www.google.com'] } });
+  t.deepEqual(end, store);
+
+  t.end();
+
+});
