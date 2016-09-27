@@ -20,7 +20,7 @@
 - event bubbling
 
 
-## motivation
+# motivation
 
 I would like to have a store at hand that is similar to redux that works well with nested components.
 - It should allow namespaced listeners
@@ -32,13 +32,13 @@ I would like to have a store at hand that is similar to redux that works well wi
 >
 > Therefore you should only add components at the leaves.
 
-## install
+# install
 
 ```sh
 npm install --save onestore
 ```
 
-## basic usage
+# basic usage
 
 ```js
 var createStore = require('onestore');
@@ -83,7 +83,7 @@ t.equal(state.length, 2);
 t.deepEqual(state, [{ message: 'now I\'m a pro', likes: 3 }, { message: 'my first tweet', likes: 1 }]);
 ```
 
-## advanced usage with namespaces
+# advanced usage with namespaces
 
 ```js
 
@@ -182,7 +182,7 @@ t.deepEqual(state, [
 
 ```
 
-## API
+# API
 
 **Glossar**
 
@@ -204,7 +204,7 @@ t.deepEqual(state, [
   The namespace corresponds with the object structure in the store.
 
 
-## Store(reducers, initialState)
+# Store(reducers, initialState)
 
 Creates a new Store.
 
@@ -212,25 +212,25 @@ Creates a new Store.
 
 `reducers` must be an `Object` with the name of the reducer as **key** and the reducer function as **value**. Multiple reducers can be proviced.
 
-## methods
+# methods
 
-#### setInitialState(initialState)
+###  setInitialState(initialState)
 
 Lets you set the initialState like in the Constructor. It must NOT be called, after an action took place with `dispatch`, otherwise a `NotAllowedError` is thrown.
 
 
-#### begin(namespace)
+###  begin(namespace)
 
 **Alias**: `component`, `module`, `ns`
 
 Sets the namespace and returns a new object with the namespace set, so that you don't have to repeat the namespace, but can define it once per component.
 You can jump out of this namespace with `end()`;
 
-#### end()
+###  end()
 
 Ends the namespace for a component and returns the original `store` object.
 
-#### register(reducers) or (name, reducer)
+###  register(reducers) or (name, reducer)
 
 **Alias**: `add`, `define`, `reducer`, `addReducer`
 
@@ -239,7 +239,7 @@ If the reducer function with the given reducerName already exists, it throws `Al
 
 You can also call the `register` function with `name` as String and a `reducer` function, when you just want to add a single `reducer`.
 
-#### update(reducers) or (name, reducer)
+###  update(reducers) or (name, reducer)
 
 **Alias**: `replaceReducer`
 
@@ -247,55 +247,55 @@ Same as `register`, but does not throw an `AlreadyExistsError` when the `reducer
 Instead it throws an `DoesNotExistError`, if it does NOT exist.
 
 
-#### upsert(reducers) or (name, reducer)
+###  upsert(reducers) or (name, reducer)
 
 **Alias**: `addOrReplaceReducer`
 
 Same as `register`, but does not throw any Errors (normally :-).
 
-#### dispatch(name, action)
+###  dispatch(name, action)
 
 **Alias**: `do`, `act`
 
 Dispatches the `action`. The `name` is the `reducerName` provided when the `reducer` function was `registered`. it must match an already defined reducer function, otherwise a `DoesNotExistError` is thrown.
 
-#### getState(namespace)
+###  getState(namespace)
 
 **Alias**: `get`
 
 Returns the state, based on the `namespace`. If no `namespace` is provided, the root state object is returned.
 
-#### getPreviousState(namespace)
+###  getPreviousState(namespace)
 
 **Alias**: `previous`, `getPrevious`
 
 Same as `getState`, but returns the previous state, based on the `namespace`. If no `namespace` is provided, the previous root state object is returned.
 
 
-## events
+# events
 
 The events correspond with the node.js [event](https://nodejs.org/api/events.html) API.
 The direct use of `emit` is discouraged, because the Store emits events based on the dispatched actions.
 Mainly useful are the parts of the API are: `on`, `once` and `removeListener`.
 
-#### on(name, state)
+###  on(name, state)
 
 called every time the action is dispatched.
 
-#### once(name, state)
+###  once(name, state)
 
 called only the first time, the action is dispatched.
 
-#### removeListener(eventName, listener)
+###  removeListener(eventName, listener)
 
 Lets you remove an event listener.
 
 
-## license
+# license
 
 MIT
 
-## related
+# related
 
 - [redux](http://redux.js.org/)
 - [store-emitter](https://github.com/sethvincent/store-emitter)

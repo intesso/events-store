@@ -77,10 +77,8 @@ Store.prototype.do =
     var nextState = this.reducers[n](currentState, action);
     this.didCallReducer(nextState, action, currentState, currentParent.state, currentParent.key);
 
-    var self = this;
-    utils.bubble(n, this._state).forEach(function (namespace, i) {
-      self.emit(namespace, utils.nested(namespace, self._state, i > 0));
-    });
+    this._send(name);
+    if (this.namespace && this._self) this._self._send.call(this._self, n);
     return this;
   };
 
@@ -141,6 +139,13 @@ Store.prototype._addSingle = function _addSingle(name, reducer, check) {
   if (check === false && !this.reducers[n]) throw new DoesNotExistError('there is no reducer with the name: ' + n);
   this.reducers[n] = reducer;
   return this;
+};
+
+Store.prototype._send = function _send(name) {
+  var self = this;
+  utils.bubble(name, this._state).forEach(function (namespace, i) {
+    self.emit(namespace, utils.nested(self._getName(namespace), self._state, i > 0));
+  });
 };
 
 inherits(DoesNotExistError, Error);

@@ -397,6 +397,9 @@ test('user', function (t) {
 
 
 test('begin namespace, end', function (t) {
+
+  var events = 0;
+
   var store = new Store();
 
   store
@@ -419,8 +422,8 @@ test('begin namespace, end', function (t) {
     .end();
 
 
-  var bookmarks = store.begin('user.bookmarks');
 
+  var bookmarks = store.begin('user.bookmarks');
   bookmarks.define({
     'INIT': function (state) {
       if (!Array.isArray(state)) return [];
@@ -435,9 +438,26 @@ test('begin namespace, end', function (t) {
       });
     }
   });
+  bookmarks.on('INIT', function (state) {
+    events++;
+  });
+  bookmarks.on('ADD', function (state) {
+    t.deepEqual(state, ['www.google.com']);
+    events++;
+  });
+
+  store.on('user.bookmarks.INIT', function (state) {
+    events++;
+  });
+  store.on('user.bookmarks.ADD', function (state) {
+    t.deepEqual(state, ['www.google.com']);
+    events++;
+  });
+
   bookmarks.do('INIT');
   bookmarks.do('ADD', 'www.google.com');
 
+  t.equals(events, 4);
   t.deepEqual(bookmarks.getState(), ['www.google.com']);
   t.true(bookmarks instanceof Store);
   t.equal(bookmarks.namespace, 'user.bookmarks');
