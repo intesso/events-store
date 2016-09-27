@@ -221,10 +221,15 @@ Lets you set the initialState like in the Constructor. It must NOT be called, af
 
 ###  begin(namespace)
 
-**Alias**: `component`, `module`, `ns`
+**Alias**: `module`, `component`, `ns`
 
-Sets the namespace and returns a new object with the namespace set, so that you don't have to repeat the namespace, but can define it once per component.
+Sets the namespace and returns a new module object with the namespace set, so that you don't have to repeat the namespace, but can define it once per module.
 You can jump out of this namespace with `end()`;
+
+When an action is dispatched on the module, the corresponding events are emitted on the module as well as on the store.
+
+> Limitation: module events are only emitted, when the dispatched on the module.
+In other words if you dispatch e.g. `store.dispatch('tweet.SEND')` **fn** is not called when defined like this: `store.begin('tweet').on('SEND', **fn**)`
 
 ###  end()
 
